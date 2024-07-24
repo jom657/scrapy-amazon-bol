@@ -9,19 +9,23 @@ from ..items import AmazonItem
 from dateutil.parser import parse
 from scrapy.http import Request
 import re
+import os
 
 class BaseAmazonSpider(scrapy.Spider):
     
     def __init__(self, *args, **kwargs):
         super(BaseAmazonSpider, self).__init__(*args, **kwargs)
         
-        
     def initialize_google_sheets(self):
          # Load configuration
-        with open('config.json') as config_file:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(base_dir, '..', '..', 'config.json')
+        
+        
+        with open(config_path) as config_file:
             config = json.load(config_file)
         
-        credentials_path = config['credentials_path']
+        credentials_path = os.path.join(base_dir, '..', '..',config['credentials_path'])
         self.spreadsheet_id = config['spreadsheet_id']
         self.sheet_name = config['daily_upload_sheet_name']
         
