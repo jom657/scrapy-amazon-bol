@@ -1,7 +1,0 @@
-{
-    "credentials_path": "credentials.json",
-    "spreadsheet_id": "1LX-vOqHR7McbmHHupb8bsggM-WVNMwUjoa0dK9TFW5k",
-    "daily_upload_sheet_name": "Daily upload Sheet",
-    "discord_webhook_url": "https://discordapp.com/api/webhooks/1264256587996987514/9U_De8QFtV5O-puZNbtEyqwKS1pr1zibMyRLcXqrKq45uqSVQJDWxN5cHzGBvYYLPtpw",
-    "retailer_id": "1817296"
-}
