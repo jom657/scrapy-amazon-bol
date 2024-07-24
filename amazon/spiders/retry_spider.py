@@ -14,7 +14,7 @@ class AmazonRetrySpider(BaseAmazonSpider):
         for index, record in enumerate(records, start=2):  # start=2 to account for header row and 1-based indexing
             url = record.get('Supplier link')
             scraping_remarks = record.get('Scraping Remarks')
-            if url and (not scraping_remarks or 'No data captured' in scraping_remarks or 'No Quantity' in scraping_remarks or 'No Price' in scraping_remarks) and "amazon" in url:
+            if url and (not scraping_remarks or 'No data captured' in scraping_remarks or 'No Quantity' in scraping_remarks or 'No Price' in scraping_remarks or 'Request failed' in scraping_remarks) and "amazon" in url:
                 self.retries = 0
                 self.processed_urls.add(url)
                 yield scrapy.Request(url=url, callback=self.parse, meta={'row_number': index}, errback=self.handle_failure)
