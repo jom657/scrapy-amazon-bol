@@ -28,15 +28,13 @@ ROBOTSTXT_OBEY = True
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 2
-# RANDOMIZE_DOWNLOAD_DELAY = True
-# CONCURRENT_REQUESTS = 16
-# CONCURRENT_REQUESTS_PER_DOMAIN = 8
-# RETRY_BACKOFF_BASE = 2
-# RETRY_BACKOFF_MAX = 60
-# The download delay setting will honor only one of:
-#CONCURRENT_REQUESTS_PER_DOMAIN = 16
-#CONCURRENT_REQUESTS_PER_IP = 16
+ROBOTSTXT_OBEY = True
+CONCURRENT_REQUESTS = 16
+DOWNLOAD_DELAY = 3
+CONCURRENT_REQUESTS_PER_DOMAIN = 8
+CONCURRENT_REQUESTS_PER_IP = 8
+COOKIES_ENABLED = False
+TELNETCONSOLE_ENABLED = False
 
 # Disable cookies (enabled by default)
 # COOKIES_ENABLED = False
@@ -94,24 +92,44 @@ DOWNLOAD_DELAY = 2
 # # -----------------------------------------------------------------------------
 
 
-# ----------------------DATAIMPULSE ROTATING PROXY--------------------------
-PROXY_USER = 'e5fe3817f8fbbf605fd1'
-PROXY_PASSWORD = 'd02b51b7be148291'
-PROXY_URL = 'gw.dataimpulse.com'
-PROXY_PORT = '823'
+# # ----------------------DATAIMPULSE ROTATING PROXY--------------------------
+# PROXY_USER = 'e5fe3817f8fbbf605fd1'
+# PROXY_PASSWORD = 'd02b51b7be148291'
+# PROXY_URL = 'gw.dataimpulse.com'
+# PROXY_PORT = '823'
 
-RETRY_TIMES = 3  # Number of times to retry
-RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]  # HTTP codes to retry
+# # RETRY_TIMES = 3  # Number of times to retry
+# # RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]  # HTTP codes to retry
+
+# DOWNLOADER_MIDDLEWARES = {
+#     'scrapy.downloadermiddlewares.retry.RetryMiddleware': 90,
+#     'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 110,
+#     'amazon.middlewares.BookProxyMiddleware': 120,
+#     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+#     'scrapy_user_agents.middlewares.RandomUserAgentMiddleware': 100,
+# }
+# # -------------------------------------------------------------------------
+
+# ---------------------Custom Rotating Proxies from Webshsare---------------
+# DOWNLOADER_MIDDLEWARES = {
+#     'amazon.middlewares.CustomRotatingProxyMiddleware': 120,
+#     'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 110,
+#     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+#     'scrapy_user_agents.middlewares.RandomUserAgentMiddleware': 100,
+# }
 
 DOWNLOADER_MIDDLEWARES = {
-    'scrapy.downloadermiddlewares.retry.RetryMiddleware': 90,
+    # 'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
+    # 'amazon.middlewares.CustomRetryMiddleware': 550,
     'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 110,
-    'amazon.middlewares.BookProxyMiddleware': 120,
+    'amazon.middlewares.CustomProxyMiddleware': 120,
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
     'scrapy_user_agents.middlewares.RandomUserAgentMiddleware': 100,
 }
-# -------------------------------------------------------------------------
+RETRY_TIMES = 3  # Number of times to retry
+RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]  # HTTP codes to retry
 
+# ---------------------------------------------------------------------------
 
 # # ----------------- Custom Rotating proxy Middleware--------------
 # DOWNLOADER_MIDDLEWARES = {

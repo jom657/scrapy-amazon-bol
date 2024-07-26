@@ -1,2 +1,10 @@
-5.56.103.45:45747
-103.115.255.129:36331
+45.127.248.127:5128:hjgrgjqc:j4bod4z3zayr
+207.244.217.165:6712:hjgrgjqc:j4bod4z3zayr
+134.73.69.7:5997:hjgrgjqc:j4bod4z3zayr
+64.64.118.149:6732:hjgrgjqc:j4bod4z3zayr
+157.52.253.244:6204:hjgrgjqc:j4bod4z3zayr
+167.160.180.203:6754:hjgrgjqc:j4bod4z3zayr
+166.88.58.10:5735:hjgrgjqc:j4bod4z3zayr
+173.0.9.70:5653:hjgrgjqc:j4bod4z3zayr
+204.44.69.89:6342:hjgrgjqc:j4bod4z3zayr
+173.0.9.209:5792:hjgrgjqc:j4bod4z3zayr

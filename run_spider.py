@@ -1,9 +1,15 @@
+import os
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 from scrapy import signals
 from pydispatch import dispatcher
 from amazon.spiders.amazon_spider import AmazonSpider
 from amazon.spiders.retry_spider import AmazonRetrySpider
+
+# Set the project base directory
+project_dir = os.path.dirname(os.path.abspath(__file__))
+# os.environ['SCRAPY_SETTINGS_MODULE'] = 'amazon_scrapy.settings'
+os.environ['SCRAPY_SETTINGS_MODULE'] = 'amazon.settings'
 
 # Get the project settings
 settings = get_project_settings()

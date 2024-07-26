@@ -1,5 +1,3 @@
-# spiders/amazon_spider.py
-
 import scrapy
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -12,20 +10,20 @@ import re
 import os
 
 class BaseAmazonSpider(scrapy.Spider):
-    
+
     def __init__(self, *args, **kwargs):
         super(BaseAmazonSpider, self).__init__(*args, **kwargs)
-        
+        self.row_count = 0
+
     def initialize_google_sheets(self):
-         # Load configuration
+        # Load configuration
         base_dir = os.path.dirname(os.path.abspath(__file__))
         config_path = os.path.join(base_dir, '..', '..', 'config.json')
-        
         
         with open(config_path) as config_file:
             config = json.load(config_file)
         
-        credentials_path = os.path.join(base_dir, '..', '..',config['credentials_path'])
+        credentials_path = os.path.join(base_dir, '..', '..', config['credentials_path'])
         self.spreadsheet_id = config['spreadsheet_id']
         self.sheet_name = config['daily_upload_sheet_name']
         
@@ -41,15 +39,6 @@ class BaseAmazonSpider(scrapy.Spider):
         
         self.retries = 0
         self.max_retries = 3
-
-    # def start_requests(self):
-    #     records = self.sheet.get_all_records()
-    #     for index, record in enumerate(records, start=2):  # start=2 to account for header row and 1-based indexing
-    #         url = record.get('Supplier link')
-    #         if url and "amazon" in url:
-    #             self.retries = 0
-    #             self.processed_urls.add(url)
-    #             yield scrapy.Request(url=url, callback=self.parse, meta={'row_number': index}, errback=self.handle_failure)
 
     def parse(self, response):
         items = AmazonItem()
@@ -78,12 +67,12 @@ class BaseAmazonSpider(scrapy.Spider):
                 
         delivery_date_raw = response.xpath('//span[contains(@data-csa-c-delivery-time, "")]/span[@class="a-text-bold"]/text()').get()
         delivery_date = None
+        days_delivered = None
         if delivery_date_raw:
             delivery_date = delivery_date_raw.strip()
             
             # compute for the number of days it can be deliver
             days_delivered = self.calculate_delivery_date(delivery_date_raw.strip())
-            
         
         # Check for "Currently unavailable" in a different location
         if not quantity:
@@ -91,16 +80,19 @@ class BaseAmazonSpider(scrapy.Spider):
 
         # Add to scraped data
         row_number = response.meta['row_number']
-        # if not (product_name and (price_whole or price_fraction) and quantity):
         if not (product_name or price_whole or price_fraction or quantity):
-            if self.retries <= self.max_retries:
-                self.retries += 1
-                self.logger.info(f"Retrying {response.url} due to missing data.")
-                print(f'------------------------Retries : {self.retries}--------------------------------')
-                yield Request(response.url, callback=self.parse, meta={'row_number': row_number}, errback=self.handle_failure, dont_filter=True)
-            else:
-                self.logger.info(f"Max retries reached for {response.url}. Saving blank results.")
-                self.scraped_data.append({
+            # if self.retries <= self.max_retries:
+            #     self.retries += 1
+            #     self.logger.info(f"Retrying {response.url} due to missing data.")
+            #     print(f'------------------------Retries : {self.retries}--------------------------------')
+            #     yield Request(response.url, callback=self.parse, meta={'row_number': row_number}, errback=self.handle_failure, dont_filter=True)
+            # else:
+            #     self.logger.info(f"Max retries reached for {response.url}. Saving blank results.")
+            #     self.scraped_data.append({
+            #         'row_number': row_number,
+            #         'remarks': f'No data captured'
+            #     })
+            self.scraped_data.append({
                     'row_number': row_number,
                     'remarks': f'No data captured'
                 })
@@ -122,6 +114,10 @@ class BaseAmazonSpider(scrapy.Spider):
 
             yield items
         
+        self.row_count += 1
+        if self.row_count % 2 == 0:
+            self.update_google_sheet()
+
     def parse_delivery_date(self, date_str):
         """Parse delivery date considering different possible formats in Dutch and English."""
         try:
@@ -153,7 +149,7 @@ class BaseAmazonSpider(scrapy.Spider):
 
         return " | ".join(remarks)
     
-    def translate_dutch_date(self,date_str):
+    def translate_dutch_date(self, date_str):
         # Mapping of Dutch month names to English month names
         dutch_months = {
             "januari": "January", "februari": "February", "maart": "March",
@@ -165,7 +161,7 @@ class BaseAmazonSpider(scrapy.Spider):
             date_str = date_str.replace(dutch, english)
         return date_str
 
-    def calculate_delivery_date(self,date_str):
+    def calculate_delivery_date(self, date_str):
         """Calculate delivery date considering different possible formats."""
         try:
             # Handle "tomorrow" and "morgen" cases
@@ -188,8 +184,7 @@ class BaseAmazonSpider(scrapy.Spider):
             print(e)
             return None
 
-    def close(self, reason):
-        print(self.scraped_data)
+    def update_google_sheet(self):
         headers = self.sheet.row_values(1)
         title_col = self.sheet.find('Amazon Title').col if 'Amazon Title' in headers else None
         price_col = self.sheet.find('Amazon Price').col if 'Amazon Price' in headers else None
@@ -205,15 +200,15 @@ class BaseAmazonSpider(scrapy.Spider):
             if 'remarks' in data and remarks_col:
                 cell_updates.append({'range': f'{chr(64+remarks_col)}{row_number}', 'values': [[data['remarks']]]})
             else:
-                if title_col and [data['product_name']]:
+                if title_col and data['product_name']:
                     cell_updates.append({'range': f'{chr(64+title_col)}{row_number}', 'values': [[data['product_name']]]})
-                if price_col and [data['price']]:   
+                if price_col and data['price']:   
                     cell_updates.append({'range': f'{chr(64+price_col)}{row_number}', 'values': [[data['price']]]})
-                if quantity_col and [data['quantity']]:
+                if quantity_col and data['quantity']:
                     cell_updates.append({'range': f'{chr(64+quantity_col)}{row_number}', 'values': [[data['quantity']]]})
-                if delivery_date_col and [data['delivery_date']]:
+                if delivery_date_col and data['delivery_date']:
                     cell_updates.append({'range': f'{chr(64+delivery_date_col)}{row_number}', 'values': [[data['delivery_date']]]})
-                if delivery_date_col and [data['delivery_date']]:
+                if days_delivered_col and data['days_delivered'] is not None:
                     cell_updates.append({'range': f'{chr(64+days_delivered_col)}{row_number}', 'values': [[data['days_delivered']]]})
                 if remarks_col:
                     cell_updates.append({'range': f'{chr(64+remarks_col)}{row_number}', 'values': [[self.get_remarks(data)]]})
@@ -221,3 +216,8 @@ class BaseAmazonSpider(scrapy.Spider):
         # Batch update cells to reduce the number of API calls
         if cell_updates:
             self.sheet.batch_update(cell_updates)
+            self.scraped_data = []
+
+    def close(self, reason):
+        print(self.scraped_data)
+        self.update_google_sheet()

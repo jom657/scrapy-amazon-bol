@@ -2,16 +2,19 @@
 #
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-import random
-
-from scrapy import signals
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
 
+
+
+import logging
+import random
+import base64
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from scrapy.utils.response import response_status_message
-import logging
+from scrapy.utils.python import global_object_name
+from twisted.internet.error import TimeoutError, TCPTimedOutError
 
 
 class AmazonSpiderMiddleware:
@@ -141,30 +144,36 @@ class BookProxyMiddleware(object):
        request.meta['proxy'] = host
        
        
-class CustomRetryMiddleware(RetryMiddleware):
+class CustomProxyMiddleware:
+    def __init__(self, proxy_list):
+        self.proxy_list = proxy_list
 
-    def __init__(self, settings):
-        super().__init__(settings)
-        self.retry_http_codes = set(int(x) for x in settings.getlist('RETRY_HTTP_CODES'))
+    @classmethod
+    def from_crawler(cls, crawler):
+        with open('proxies.txt', 'r') as f:
+            proxy_list = [line.strip() for line in f]
+        return cls(proxy_list)
 
-    def process_response(self, request, response, spider):
-        if self._needs_retry(request, response):
-            reason = response_status_message(response.status)
-            return self._retry(request, reason, spider) or response
-        return response
+    def process_request(self, request, spider):
+        proxy = random.choice(self.proxy_list)
+        ip, port, username, password = proxy.split(':')
+        request.meta['proxy'] = f"http://{username}:{password}@{ip}:{port}"
 
-    def _needs_retry(self, request, response):
-        # Check if response is empty or missing expected data
-        if response.status in self.retry_http_codes:
-            return True
+# class CustomProxyMiddleware:
+#     def __init__(self, proxy_list):
+#         self.proxy_list = proxy_list
 
-        product_name = response.css('#productTitle::text').get()
-        price_whole = response.css('.a-price-whole::text').get()
-        price_fraction = response.css('.a-price-fraction::text').get()
-        quantity = response.css('#availability span::text').re_first(r'Currently unavailable')
+#     @classmethod
+#     def from_crawler(cls, crawler):
+#         with open('proxies.txt', 'r') as f:
+#             proxy_list = [line.strip() for line in f]
+#         return cls(proxy_list)
 
-        if not (product_name and (price_whole or price_fraction) and quantity):
-            logging.info(f"------------ Retrying {request.url} due to missing data.")
-            return True
-
-        return False
+#     def process_request(self, request, spider):
+#         proxy = random.choice(self.proxy_list)
+#         ip, port, username, password = proxy.split(':')
+#         request.meta['proxy'] = f"http://{ip}:{port}"
+#         encoded_user_pass = base64.b64encode(f'{username}:{password}'.encode()).decode('utf-8')
+#         request.headers['Proxy-Authorization'] = 'Basic ' + encoded_user_pass
+        
+        
